@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HireMind</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+       <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+   
+    <style>
+        :root {
+            --primary-color: #005f87;
+            --secondary-color: #f8f9fa;
+            --accent-color: #003d5b;
+            --highlight-color: #00a8e8;
+            --text-color: #c9d2e3;
+            --light-color: #ffffff;
+            --dark-color: #1a202c;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+        }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        h1, h2, h3, h4, h5 {
+            font-family: 'Playfair Display', serif;
+            color: var(--primary-color);
+        }
+        
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: none;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            background-color: var(--light-color);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card-header {
+            border-radius: 12px 12px 0 0 !important;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            padding: 1.5rem;
+            border-bottom: none;
+        }
+        
+        .ai-message {
+            background-color: #f0f7fc;
+            border-radius: 18px 18px 18px 4px;
+            max-width: 85%;
+            padding: 1.25rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e1e9ee;
+        }
+        
+        .user-message {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+            max-width: 85%;
+            margin-left: auto;
+            padding: 1.25rem;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .interview-container {
+            height: 60vh;
+            overflow-y: auto;
+            background-color: var(--light-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.03);
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-color) #f1f1f1;
+            border: 1px solid #e1e9ee;
+        }
+        
+        .interview-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .interview-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .interview-container::-webkit-scrollbar-thumb {
+            background-color: var(--primary-color);
+            border-radius: 10px;
+        }
+        
+        .progress-bar {
+            transition: width 0.5s ease-in-out;
+            background-color: var(--primary-color);
+        }
+        
+        #camera-feed {
+            width: 100%;
+            height: auto;
+            background-color: #f0f0f0;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .warning-alert {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            border: none;
+            max-width: 400px;
+        }
+        
+        .typing-indicator {
+            display: inline-flex;
+            align-items: center;
+        }
+        
+        .typing-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            margin-right: 4px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 95, 135, 0.3);
+        }
+        
+        .form-control, .form-select {
+            border-radius: 8px;
+            padding: 12px 16px;
+            border: 1px solid #d1d9e0;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(0, 95, 135, 0.25);
+        }
+        
+        .badge {
+            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+        
+        .hr-avatar {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+        
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            background-color: var(--light-color);
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+            border: 2px solid var(--primary-color);
+            flex-shrink: 0;
+            font-size: 1.1rem;
+        }
+        
+        .interview-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            z-index: -1;
+        }
+        
+        #voice-btn.listening {
+            animation: pulse 1.5s infinite;
+            position: relative;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(0, 95, 135, 0.7); }
+            70% { box-shadow: 0 0 0 12px rgba(0, 95, 135, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 95, 135, 0); }
+        }
+        
+        .difficulty-easy {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .difficulty-medium {
+            background-color: var(--warning-color);
+            color: var(--dark-color);
+        }
+        
+        .difficulty-hard {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .type-technical {
+            background-color: #4299e1;
+            color: white;
+        }
+        
+        .type-scenario {
+            background-color: #9f7aea;
+            color: white;
+        }
+        
+        .type-behavioral {
+            background-color: #ed64a6;
+            color: white;
+        }
+        
+        .type-regulatory {
+            background-color: #667eea;
+            color: white;
+        }
+        
+        .type-product {
+            background-color: #38b2ac;
+            color: white;
+        }
+        
+        .voice-btn-container {
+            position: relative;
+        }
+        
+        .voice-wave {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            opacity: 0;
+            background: rgba(0, 95, 135, 0.2);
+            transition: opacity 0.3s ease;
+        }
+        
+        #voice-btn.listening .voice-wave {
+            opacity: 1;
+        }
+        
+        .intro-animation {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .response-timer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .timer-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--light-color);
+            border: 3px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .timer-text {
+            margin-left: 10px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+        
+        .response-timeout {
+            color: var(--danger-color);
+            animation: pulseWarning 1s infinite;
+        }
+        
+        @keyframes pulseWarning {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        
+        .insurance-icon {
+            color: var(--primary-color);
+            margin-right: 8px;
+        }
+        
+        .sidebar-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-card .card-body {
+            flex-grow: 1;
+        }
+        
+        .sidebar-card .card-footer {
+            background-color: transparent;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .company-logo {
+            height: 40px;
+            margin-right: 10px;
+        }
+        
+        .header-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .header-brand:hover {
+            color: var(--accent-color);
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            background-color: white;
+        }
+        
+        .footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        .footer a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer a:hover {
+            color: white;
+        }
+        
+        .footer-title {
+            font-family: 'Playfair Display', serif;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        
+        .footer-links {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .copyright {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 1.5rem;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .text-highlight {
+            color: var(--highlight-color);
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .answer-input textarea {
+            min-height: 100px;
+        }
+        
+        .response-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .response-dots {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .response-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: #e0e0e0;
+            transition: background-color 0.3s;
+        }
+        
+        .response-dot.active {
+            background-color: var(--primary-color);
+        }
+        
+        /* Add to your existing styles */
+        #text-fallback-input {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+        }
+        
+        #text-fallback-submit {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+        
+        .voice-fallback {
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="interview-background"></div>
+    
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white">
+        <div class="container">
+            <a class="navbar-brand header-brand" href="#">
+                <img src="logo.png" alt="Hire Mind" class="company-logo" style="border-radius: 25px;">
+                Hire Mind  
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="bi bi-house-door"></i> Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="bi bi-info-circle"></i> About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#"><i class="bi bi-headset"></i> Contact</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container py-5 intro-animation">
+          <!-- Warning Alert for Cheating Detection -->
+        <div class="warning-alert alert alert-warning alert-dismissible fade show" role="alert">
+            <strong>Warning!</strong> <span id="warning-message">Please focus on the interview.</span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
+        <!-- Registration Form -->
+        <div id="registration-section" class="card shadow">
+            <div class="card-header">
+                <h3 class="mb-0" style="color: #f0f5f8;"><i class="bi bi-people-fill me-2"></i>Insurance HR Interview Platform</h3>
+            </div>
+            <div class="card-body">
+                <form id="registration-form">
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="name" class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Position Applying For</label>
+                        <select class="form-select" id="role" required>
+                            <option value="">Select position</option>
+                            <option value="Underwriter">Underwriter</option>
+                            <option value="Claims Adjuster">Claims Adjuster</option>
+                            <option value="Actuary">Actuary</option>
+                            <option value="Insurance Agent">Insurance Agent</option>
+                            <option value="Risk Manager">Risk Manager</option>
+                            <option value="Customer Service Representative">Customer Service Representative</option>
+                            <option value="Sales Manager">Sales Manager</option>
+                            <option value="Compliance Officer">Compliance Officer</option>
+                            <option value="Product Manager">Product Manager</option>
+                            <option value="HR Business Partner">HR Business Partner</option>
+                            <option value="Talent Acquisition Specialist">Talent Acquisition Specialist</option>
+                            <option value="Learning and Development Manager">Learning and Development Manager</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="experience" class="form-label">Years of Experience</label>
+                        <select class="form-select" id="experience" required>
+                            <option value="">Select experience</option>
+                            <option value="0-1 years">0-1 years</option>
+                            <option value="1-3 years">1-3 years</option>
+                            <option value="3-5 years">3-5 years</option>
+                            <option value="5+ years">5+ years</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="question-count" class="form-label">Interview Duration</label>
+                        <select class="form-select" id="question-count" required>
+                            <option value="5">Short (5 questions)</option>
+                            <option value="10">Standard (10 questions)</option>
+                            <option value="15">Comprehensive (15 questions)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="consent" required>
+                        <label class="form-check-label" for="consent">I consent to this interview being recorded</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <span id="submit-text">Begin Interview</span>
+                        <span id="submit-loading" style="display: none;">
+                            <span class="loading-spinner"></span> Preparing Interview...
+                        </span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Interview Section -->
+        <div id="interview-section" class="card shadow mt-4" style="display: none;">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0" style="color: #d1d9e0;"><i class="bi bi-chat-square-text-fill me-2" style="color: #d1d9e0;"></i>Insurance HR Interview</h3>
+                    <small class="text-white-50">Conducted by: <span id="hr-name">Priya Sharma</span></small>
+                </div>
+                <div>
+                    <span id="timer" class="badge bg-light text-dark">00:00</span>
+                    <button id="end-interview-btn" class="btn btn-sm btn-light ms-2">End Interview</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8 mb-4 mb-md-0">
+                        <div class="interview-container mb-3">
+                            <div id="chat-messages">
+                                <!-- Messages will appear here -->
+                            </div>
+                        </div>
+                        <div class="response-timer" id="response-timer-container" style="display: none;">
+                            <div class="timer-circle" id="response-timer">15</div>
+                            <div class="timer-text" id="response-timer-text">seconds remaining</div>
+                        </div>
+                        <div class="voice-btn-container">
+                            <button id="voice-btn" class="btn btn-primary w-100">
+                                <i class="bi bi-mic-fill me-2"></i> Click to Speak
+                            </button>
+                        </div>
+                        <div id="voice-status" class="text-center mt-2 text-muted small">
+                            Click the button and start speaking
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card sidebar-card mb-3">
+                            <div class="card-header bg-white text-dark">
+                                <h5 class="mb-0"><i class="bi bi-camera-video-fill me-2" style="color: #d1d9e0;"></i>Video Feed</h5>
+                            </div>
+                            <div class="card-body p-2">
+                                <video id="camera-feed" autoplay playsinline></video>
+                                <div class="form-text text-center mt-2">Please ensure your face is visible</div>
+                            </div>
+                            <div class="card-footer text-center">
+                                <small class="text-muted"><i class="bi bi-shield-lock"></i> Your privacy is protected</small>
+                            </div>
+                        </div>
+                        <div class="card sidebar-card">
+                            <div class="card-header bg-white text-dark">
+                                <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Interview Progress</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="progress mb-3" style="height: 12px;">
+                                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <div id="question-counter" class="text-center small">Question 0 of 0</div>
+                                <div class="response-indicator mt-3">
+                                    <div class="response-dots" id="response-dots">
+                                        <!-- Dots will be added dynamically -->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-center">
+                                <small class="text-muted">Take your time to respond thoughtfully</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results-section" class="card shadow mt-4" style="display: none;">
+            <div class="card-header">
+                <h3 class="mb-0"><i class="bi bi-clipboard-data-fill me-2"></i>Interview Results</h3>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-4 mb-md-0">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Candidate Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <th>Name</th>
+                                        <td id="result-name">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Email</th>
+                                        <td id="result-email">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Position</th>
+                                        <td id="result-role">-</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Experience</th>
+                                        <td id="result-experience">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h5 class="mb-0">Interview Summary</h5>
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <th>Total Questions</th>
+                                        <td id="total-questions">0</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Performance Score</th>
+                                        <td id="overall-score">0%</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Duration</th>
+                                        <td id="interview-duration">00:00</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Average Response Time</th>
+                                        <td id="avg-response-time">-</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h4 class="mb-3"><i class="bi bi-chat-square-text-fill me-2"></i>Detailed Feedback</h4>
+                <div id="detailed-feedback" class="mb-4">
+                    <!-- Feedback will appear here -->
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-star-fill me-2"></i>Overall Assessment</h5>
+                    </div>
+                    <div class="card-body">
+                        <p id="overall-assessment" class="mb-0">Assessment will appear here</p>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <button id="download-report" class="btn btn-primary">
+                        <i class="bi bi-download me-2"></i> Download Full Report
+                    </button>
+                    <button id="new-interview-btn" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-repeat me-2"></i> Start New Interview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5 class="footer-title">Hire Mind</h5>
+                    <p>Providing innovative HR solutions for the insurance industry since 2023.</p>
+                    <div class="mt-3">
+                        <a href="#" class="text-white me-3"><i class="bi bi-facebook"></i></a>
+                        <a href="#" class="text-white me-3"><i class="bi bi-twitter"></i></a>
+                        <a href="#" class="text-white me-3"><i class="bi bi-linkedin"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4 mb-md-0">
+                    <h5 class="footer-title">Quick Links</h5>
+                    <ul class="footer-links">
+                        <li><a href="#">Home</a></li>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Services</a></li>
+                        <li><a href="#">Careers</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-3 mb-4 mb-md-0">
+                    <h5 class="footer-title">Contact</h5>
+                    <ul class="footer-links">
+                        <li><i class="bi bi-geo-alt-fill me-2"></i> Jamshedpur</li>
+                        <li><i class="bi bi-telephone-fill me-2"></i>9031358194</li>
+                        <li><i class="bi bi-envelope-fill me-2"></i> hr@hiremind.com</li>
+                    </ul>
+                </div>
+                <div class="col-md-3">
+                    <h5 class="footer-title">Legal</h5>
+                    <ul class="footer-links">
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright text-center">
+                &copy; 2023 Hire Mind. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <img src="" alt=""  style="width: 50px;height:50px; border-radius: 100%;">
+  <!-- Add these scripts at the bottom, just before closing body tag -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="my.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
