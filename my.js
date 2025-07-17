@@ -41,7 +41,9 @@ let interviewState = {
     maxPrivacyViolations: 1, // Terminate after 1 violation
     privacyViolations: 0,
     blurTime: null,
-    maxBlurDuration: 2000, // 2 seconds max
+    lastBlurTime: null,
+    blurTimeout: null,
+    maxBlurTime: 2000, // 2 seconds max
     windowFocusListener: null,
     blurListener: null,
     visibilityChangeListener: null,
@@ -382,7 +384,74 @@ function askQuestion() {
     // Record response start time
     interviewState.currentResponseStartTime = new Date();
 }
+function initializeSpeechRecognition() {
+    try {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (!SpeechRecognition) {
+            showVoiceRecognitionError("Voice recognition not supported in your browser");
+            return;
+        }
+        
+        interviewState.recognition = new SpeechRecognition();
+        interviewState.recognition.continuous = false;
+        interviewState.recognition.interimResults = false;
+        interviewState.recognition.maxAlternatives = 1;
+        
+        // Set language based on user preference
+        interviewState.recognition.lang = 'en-US';
+        
+        interviewState.recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.trim();
+            if (interviewState.isMCQ) {
+                handleMCQAnswer(transcript);
+            } else {
+                displayUserMessage(transcript);
+                evaluateAnswer(transcript);
+            }
+        };
+        
+        interviewState.recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            let errorMessage = "Error: Could not access microphone";
+            
+            switch(event.error) {
+                case 'no-speech':
+                    errorMessage = "No speech detected. Please try again.";
+                    break;
+                case 'audio-capture':
+                    errorMessage = "Microphone not found. Please check your audio settings.";
+                    break;
+                case 'not-allowed':
+                    errorMessage = "Microphone access denied. Please enable permissions.";
+                    break;
+            }
+            
+            showVoiceRecognitionError(errorMessage);
+        };
+        
+        interviewState.recognition.onend = () => {
+            if (!interviewState.isSpeaking) {
+                resetVoiceButton();
+            }
+        };
+        
+    } catch (error) {
+        console.error('Error initializing speech recognition:', error);
+        showVoiceRecognitionError("Voice recognition unavailable. Please use text input.");
+    }
+}
 
+async function checkMicrophonePermission() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        stream.getTracks().forEach(track => track.stop());
+        return true;
+    } catch (err) {
+        console.error('Microphone permission denied:', err);
+        return false;
+    }
+}
 // Start response timer (15 seconds)
 function startResponseTimer() {
     responseTimerContainer.style.display = 'flex';
@@ -681,68 +750,6 @@ async function evaluateAnswer(answer) {
     }
 }
 
-// Initialize speech recognition with error handling
-function initializeSpeechRecognition() {
-    try {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        
-        if (!SpeechRecognition) {
-            showVoiceRecognitionError("Voice recognition not supported in your browser. Please use Chrome or Edge.");
-            return;
-        }
-        
-        interviewState.recognition = new SpeechRecognition();
-        interviewState.recognition.continuous = false;
-        interviewState.recognition.interimResults = false;
-        interviewState.recognition.lang = 'en-US';
-        
-        interviewState.recognition.onresult = (event) => {
-            if (event.results && event.results.length > 0) {
-                const transcript = event.results[0][0].transcript.trim();
-                
-                if (interviewState.isMCQ) {
-                    // Handle MCQ answer by voice
-                    handleMCQAnswer(transcript);
-                } else {
-                    // Handle regular answer by voice
-                    displayUserMessage(transcript);
-                    evaluateAnswer(transcript);
-                }
-            }
-            resetVoiceButton();
-        };
-        
-        interviewState.recognition.onerror = (event) => {
-            console.error('Speech recognition error:', event.error);
-            let errorMessage = "Voice recognition error. Please try again.";
-            
-            switch(event.error) {
-                case 'network':
-                    errorMessage = "Network error occurred. Please check your internet connection.";
-                    break;
-                case 'not-allowed':
-                    errorMessage = "Microphone access denied. Please allow microphone permissions.";
-                    break;
-                case 'service-not-allowed':
-                    errorMessage = "Browser doesn't have permission to use microphone.";
-                    break;
-            }
-            
-            showVoiceRecognitionError(errorMessage);
-            resetVoiceButton();
-        };
-        
-        interviewState.recognition.onend = () => {
-            if (!interviewState.isSpeaking) {
-                resetVoiceButton();
-            }
-        };
-        
-    } catch (error) {
-        console.error('Error initializing speech recognition:', error);
-        showVoiceRecognitionError("Failed to initialize voice recognition. Please refresh the page.");
-    }
-}
 
 // Show error message and provide fallback
 function showVoiceRecognitionError(message) {
@@ -774,13 +781,14 @@ function showVoiceRecognitionError(message) {
     });
 }
 
-// Handle voice button click with network awareness
-function handleVoiceButtonClick() {
+
+async function handleVoiceButtonClick() {
     if (!interviewState.isInterviewStarted) return;
     
-    // Check online status
-    if (!navigator.onLine) {
-        showVoiceRecognitionError("You appear to be offline. Voice recognition requires internet connection.");
+    // Check permissions first
+    const hasPermission = await checkMicrophonePermission();
+    if (!hasPermission) {
+        showVoiceRecognitionError("Microphone access required. Please enable permissions.");
         return;
     }
     
@@ -790,6 +798,8 @@ function handleVoiceButtonClick() {
         startVoiceRecording();
     }
 }
+
+
 
 // Start voice recording with permissions check
 function startVoiceRecording() {
@@ -1479,108 +1489,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// Replace setupTabMonitoring with this enhanced version
 function setupPrivacyMonitoring() {
-    // Window blur/focus detection (switching apps or browsers)
-    interviewState.windowFocusListener = () => {
-        if (!document.hasFocus() && interviewState.isInterviewStarted) {
-            handlePrivacyViolation("Switched away from interview window");
-        }
-    };
-    
-    window.addEventListener('focus', interviewState.windowFocusListener);
-    window.addEventListener('blur', interviewState.windowFocusListener);
-
-    // Tab visibility detection
-    interviewState.visibilityChangeListener = () => {
+    // Tab visibility change
+    document.addEventListener('visibilitychange', () => {
         if (document.hidden && interviewState.isInterviewStarted) {
-            interviewState.blurTime = new Date().getTime();
-            handlePrivacyViolation("Left interview tab");
-        } else if (interviewState.isInterviewStarted) {
-            // Check how long they were away
-            if (interviewState.blurTime) {
-                const blurDuration = new Date().getTime() - interviewState.blurTime;
-                if (blurDuration > interviewState.maxBlurDuration) {
-                    handlePrivacyViolation(`Left interview for ${Math.round(blurDuration/1000)} seconds`);
-                }
-            }
-            interviewState.blurTime = null;
+            interviewState.lastBlurTime = Date.now();
+            interviewState.blurTimeout = setTimeout(() => {
+                handlePrivacyViolation("Left the interview tab");
+            }, interviewState.maxBlurTime);
+        } else {
+            clearTimeout(interviewState.blurTimeout);
         }
-    };
-    
-    document.addEventListener('visibilitychange', interviewState.visibilityChangeListener);
-
-    // Prevent right-click and other context menus
-    document.addEventListener('contextmenu', (e) => {
+    });
+        // Window focus/blur (switching applications)
+    window.addEventListener('blur', () => {
         if (interviewState.isInterviewStarted) {
-            e.preventDefault();
-            handlePrivacyViolation("Attempted to access context menu");
+            interviewState.lastBlurTime = Date.now();
+            interviewState.blurTimeout = setTimeout(() => {
+                handlePrivacyViolation("Switched to another application");
+            }, interviewState.maxBlurTime);
         }
     });
 
-    // Detect keyboard shortcuts (Ctrl+T, Ctrl+N, etc.)
-    document.addEventListener('keydown', (e) => {
-        if (!interviewState.isInterviewStarted) return;
-        
-        // Block common browser shortcuts
-        const blockedShortcuts = [
-            e.ctrlKey && e.key === 't', // New tab
-            e.ctrlKey && e.key === 'n', // New window
-            e.ctrlKey && e.key === 'Tab', // Switch tabs
-            e.altKey && e.key === 'Tab', // Switch apps
-            e.key === 'F11', // Fullscreen
-            e.ctrlKey && e.key === 'w', // Close tab
-            e.ctrlKey && e.shiftKey && e.key === 'N', // Incognito
-            e.key === 'Escape' // Try to exit fullscreen
-        ];
-
-        if (blockedShortcuts.some(Boolean)) {
-            e.preventDefault();
-            handlePrivacyViolation("Attempted browser shortcut");
-        }
+    window.addEventListener('focus', () => {
+        clearTimeout(interviewState.blurTimeout);
     });
 }
-
-// New function to handle privacy violations
 function handlePrivacyViolation(reason) {
-    if (!interviewState.strictPrivacyMode || !interviewState.isInterviewStarted) return;
+    if (!interviewState.isInterviewStarted) return;
     
-    interviewState.privacyViolations++;
+    // Show warning
+    const warning = document.createElement('div');
+    warning.className = 'alert alert-danger';
+    warning.innerHTML = `
+        <strong>Warning!</strong> ${reason}. The interview will now end.
+    `;
+    document.body.prepend(warning);
     
-    // Immediate termination for any violation in strict mode
-    if (interviewState.privacyViolations >= interviewState.maxPrivacyViolations) {
-        // Clean up event listeners first
-        cleanupPrivacyMonitoring();
-        
-        // Show termination message
-        const terminationMsg = `
-        <div class="alert alert-danger">
-            <h4>Interview Terminated</h4>
-            <p>Your interview has been terminated due to: ${reason}</p>
-            <p>Our system detected activity that violates the interview integrity policy.</p>
-        </div>
-        `;
-        
-        if (chatMessages) {
-            chatMessages.innerHTML += terminationMsg;
-            scrollToBottom();
-        }
-        
-        // End the interview immediately
-        endInterview();
-        
-        // Show alert to user
-        alert("Interview terminated due to violation of integrity policy. Please contact HR if you believe this was an error.");
-        
-        // Disable all interactive elements
-        if (voiceBtn) voiceBtn.disabled = true;
-        if (endInterviewBtn) endInterviewBtn.disabled = true;
-        
-        return;
-    }
+    // End interview immediately
+    endInterview();
     
-    // First violation warning
-    showWarning(`Warning: ${reason}. Further violations will terminate the interview.`);
+    // Disable all controls
+    if (voiceBtn) voiceBtn.disabled = true;
+    if (endInterviewBtn) endInterviewBtn.disabled = true;
 }
 
 // Clean up privacy monitoring when interview ends
@@ -1611,4 +1562,35 @@ function startNewInterview() {
     setupPrivacyMonitoring();
     
     // ... rest of existing startNewInterview code ...
+}
+function endInterview() {
+    if (!interviewState.isInterviewStarted) return;
+    
+    // Stop all timers
+    clearInterval(interviewState.timerInterval);
+    clearInterval(interviewState.responseTimerInterval);
+    clearTimeout(interviewState.blurTimeout);
+    
+    // Stop speech recognition
+    if (interviewState.recognition) {
+        interviewState.recognition.stop();
+    }
+    
+    // Stop camera stream
+    if (cameraFeed.srcObject) {
+        cameraFeed.srcObject.getTracks().forEach(track => track.stop());
+    }
+    
+    // Calculate and display results
+    calculateResults();
+    
+    // Update UI
+    interviewSection.style.display = 'none';
+    resultsSection.style.display = 'block';
+    
+    // Set flag
+    interviewState.isInterviewStarted = false;
+    
+    // Show completion message
+    displayAIMessage("The interview has concluded. Thank you for your time!");
 }
